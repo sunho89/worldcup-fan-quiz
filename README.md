@@ -157,4 +157,4 @@ const APP_SECRET = '' // 填入你的 App Secret
 
 ---
 
-MIT
+good luck！
