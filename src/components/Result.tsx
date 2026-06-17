@@ -1,8 +1,9 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import html2canvas from 'html2canvas'
 import { useQuizStore } from '../hooks/useQuiz'
 import { ScoreResult } from '../utils/scoring'
+import { publishToZhihu, PublishResult } from '../utils/zhihuApi'
 
 const abilityLabels: Record<keyof ScoreResult, string> = {
   knowledge: '足球知识',
@@ -23,23 +24,32 @@ const abilityColors: Record<keyof ScoreResult, string> = {
 export default function Result() {
   const { primaryFanType, secondaryFanType, scores, reset } = useQuizStore()
   const cardRef = useRef<HTMLDivElement>(null)
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [publishResult, setPublishResult] = useState<PublishResult | null>(null)
 
   if (!primaryFanType || !scores) return null
 
-  const handleSaveCard = async () => {
-    if (!cardRef.current) return
+  const handleSaveCard = async (): Promise<string | null> => {
+    if (!cardRef.current) return null
     try {
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: '#1A1A2E',
         scale: 2,
       })
-      const link = document.createElement('a')
-      link.download = '我的球迷类型.png'
-      link.href = canvas.toDataURL('image/png')
-      link.click()
+      return canvas.toDataURL('image/png')
     } catch (err) {
       console.error('Failed to save card:', err)
+      return null
     }
+  }
+
+  const handleSaveCardDownload = async () => {
+    const dataUrl = await handleSaveCard()
+    if (!dataUrl) return
+    const link = document.createElement('a')
+    link.download = '我的球迷类型.png'
+    link.href = dataUrl
+    link.click()
   }
 
   const handleShare = () => {
@@ -50,8 +60,23 @@ export default function Result() {
         url: window.location.href,
       })
     } else {
-      handleSaveCard()
+      handleSaveCardDownload()
     }
+  }
+
+  const handlePublishToZhihu = async () => {
+    setIsPublishing(true)
+    setPublishResult(null)
+
+    const result = await publishToZhihu(
+      primaryFanType.name,
+      primaryFanType.emoji,
+      primaryFanType.teams,
+      primaryFanType.quote
+    )
+
+    setPublishResult(result)
+    setIsPublishing(false)
   }
 
   const abilityKeys = Object.keys(abilityLabels) as Array<keyof ScoreResult>
@@ -216,6 +241,22 @@ export default function Result() {
           </motion.div>
         )}
 
+        {/* Publish result toast */}
+        {publishResult && (
+          <motion.div
+            className={`rounded-xl p-4 mb-4 text-center ${
+              publishResult.success
+                ? 'bg-green-500/20 border border-green-500/30 text-green-400'
+                : 'bg-red-500/20 border border-red-500/30 text-red-400'
+            }`}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {publishResult.success ? '✅ ' : '❌ '}
+            {publishResult.message}
+          </motion.div>
+        )}
+
         {/* Action buttons */}
         <motion.div
           className="space-y-3"
@@ -224,11 +265,29 @@ export default function Result() {
           transition={{ delay: 1.3 }}
         >
           <motion.button
-            onClick={handleSaveCard}
+            onClick={handleSaveCardDownload}
             className="w-full py-4 rounded-full text-white font-bold gradient-bg shadow-lg touch-feedback"
             whileTap={{ scale: 0.98 }}
           >
             📸 保存分享卡片
+          </motion.button>
+
+          <motion.button
+            onClick={handlePublishToZhihu}
+            disabled={isPublishing}
+            className="w-full py-4 rounded-full text-white font-bold bg-blue-600 hover:bg-blue-700 touch-feedback disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            whileTap={{ scale: 0.98 }}
+          >
+            {isPublishing ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                发布中...
+              </>
+            ) : (
+              <>
+                🇨🇳 同步到知乎想法
+              </>
+            )}
           </motion.button>
 
           <motion.button
