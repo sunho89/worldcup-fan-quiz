@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { questions } from '../data/questions'
+import { fanQuestions, teamQuestions } from '../data/questions'
 import { useQuizStore } from '../hooks/useQuiz'
 
 export default function Question() {
   const [selected, setSelected] = useState<string | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const { currentQuestion, selectAnswer, nextQuestion } = useQuizStore()
+  const { currentQuestion, selectAnswer, nextQuestion, quizType } = useQuizStore()
 
+  const questions = quizType === 'fan' ? fanQuestions : teamQuestions
+  const total = questions.length
   const question = questions[currentQuestion - 1]
-  const progress = (currentQuestion / questions.length) * 100
+  const progress = (currentQuestion / total) * 100
 
   const handleSelect = (key: string) => {
     if (isTransitioning) return
@@ -42,7 +44,7 @@ export default function Question() {
         </div>
         <div className="flex justify-between items-center">
           <span className="text-gray-400 text-sm">
-            第 <span className="text-accent font-bold">{currentQuestion}</span> / 10 题
+            第 <span className="text-accent font-bold">{currentQuestion}</span> / {total} 题
           </span>
           <span className="text-gray-500 text-sm">{Math.round(progress)}%</span>
         </div>

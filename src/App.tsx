@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useQuizStore } from './hooks/useQuiz'
-import Cover from './components/Cover'
+import Home from './components/Home'
 import Guide from './components/Guide'
 import Question from './components/Question'
 import Reveal from './components/Reveal'
 import Result from './components/Result'
+import TeamResult from './components/TeamResult'
 
 const pageVariants = {
   initial: { opacity: 0, x: 50 },
@@ -15,22 +16,22 @@ const pageVariants = {
 const pageTransition = { duration: 0.3, ease: 'easeInOut' }
 
 function App() {
-  const { phase, goToQuiz } = useQuizStore()
+  const { phase, quizType, setQuizType, goToQuiz, reset } = useQuizStore()
 
   const renderPage = () => {
     switch (phase) {
-      case 'cover':
-        return <Cover onStart={goToQuiz} />
+      case 'home':
+        return <Home onSelect={setQuizType} />
       case 'guide':
-        return <Guide onStart={goToQuiz} />
+        return <Guide onStart={goToQuiz} onBack={reset} />
       case 'quiz':
         return <Question />
       case 'reveal':
         return <Reveal />
       case 'result':
-        return <Result />
+        return quizType === 'team' ? <TeamResult /> : <Result />
       default:
-        return <Cover onStart={goToQuiz} />
+        return <Home onSelect={setQuizType} />
     }
   }
 
@@ -48,7 +49,7 @@ function App() {
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={phase}
+          key={`${phase}-${quizType}`}
           variants={pageVariants}
           initial="initial"
           animate="animate"

@@ -1,16 +1,27 @@
 import { motion } from 'framer-motion'
+import { useQuizStore } from '../hooks/useQuiz'
 
 interface GuideProps {
   onStart: () => void
+  onBack: () => void
 }
 
-const rules = [
-  { icon: '📝', text: '共 10 道题，答完自动出结果' },
-  { icon: '🎯', text: '没有标准答案，只有你的真实人格' },
-  { icon: '🤫', text: '支持分享，但禁止剧透给朋友' },
-]
+export default function Guide({ onStart, onBack }: GuideProps) {
+  const { quizType } = useQuizStore()
+  const isTeam = quizType === 'team'
 
-export default function Guide({ onStart }: GuideProps) {
+  const rules = isTeam
+    ? [
+        { icon: '📝', text: '共 6 道题，答完自动匹配球队' },
+        { icon: '🎯', text: '没有标准答案，凭直觉选择' },
+        { icon: '🏠', text: '找到与你灵魂契合的本命球队' },
+      ]
+    : [
+        { icon: '📝', text: '共 10 道题，答完自动出结果' },
+        { icon: '🎯', text: '没有标准答案，只有你的真实人格' },
+        { icon: '🤫', text: '支持分享，但禁止剧透给朋友' },
+      ]
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6">
       <motion.div
@@ -26,10 +37,12 @@ export default function Guide({ onStart }: GuideProps) {
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
         >
-          ⚽
+          {isTeam ? '🏠' : '🔮'}
         </motion.div>
 
-        <h2 className="text-3xl font-bold mb-2 text-white">测试规则</h2>
+        <h2 className="text-3xl font-bold mb-2 text-white">
+          {isTeam ? '本命球队匹配器' : '你是哪种球迷？'}
+        </h2>
         <p className="text-gray-400 mb-10">在开始之前，了解一下规则</p>
 
         {/* Rules list */}
@@ -55,11 +68,18 @@ export default function Guide({ onStart }: GuideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
           我准备好了，开整！🚀
         </motion.button>
+
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          className="mt-4 text-gray-500 text-sm hover:text-gray-400"
+        >
+          ← 返回首页
+        </button>
       </motion.div>
     </div>
   )

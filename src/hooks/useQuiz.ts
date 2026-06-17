@@ -1,18 +1,23 @@
 import { create } from 'zustand'
 import { FanType, fanTypes } from '../data/fanTypes'
 import { ScoreResult, calculateScores } from '../utils/scoring'
+import { TeamOption, matchTeam } from '../data/teams'
 
-type QuizPhase = 'cover' | 'guide' | 'quiz' | 'reveal' | 'result'
+export type QuizType = 'fan' | 'team'
+type QuizPhase = 'home' | 'guide' | 'quiz' | 'reveal' | 'result'
 
 interface QuizState {
+  quizType: QuizType
   phase: QuizPhase
   currentQuestion: number
   answers: Record<number, string>
   scores: ScoreResult | null
   primaryFanType: FanType | null
   secondaryFanType: FanType | null
+  matchedTeam: TeamOption | null
 
   // Actions
+  setQuizType: (type: QuizType) => void
   startQuiz: () => void
   goToGuide: () => void
   goToQuiz: () => void
@@ -24,28 +29,33 @@ interface QuizState {
 }
 
 export const useQuizStore = create<QuizState>((set, get) => ({
-  phase: 'cover',
+  quizType: 'fan',
+  phase: 'home',
   currentQuestion: 1,
   answers: {},
   scores: null,
   primaryFanType: null,
   secondaryFanType: null,
+  matchedTeam: null,
+
+  setQuizType: (type) => set({ quizType: type, phase: 'guide' }),
 
   startQuiz: () => set({ phase: 'guide' }),
 
-  goToGuide: () => set({ phase: 'guide' }),
+  goToGuide: () => set({ phase: 'guide', currentQuestion: 1, answers: {} }),
 
   goToQuiz: () => set({ phase: 'quiz', currentQuestion: 1 }),
 
-  selectAnswer: (questionId: number, answer: string) => {
+  selectAnswer: (questionId, answer) => {
     set((state) => ({
       answers: { ...state.answers, [questionId]: answer },
     }))
   },
 
   nextQuestion: () => {
-    const { currentQuestion } = get()
-    if (currentQuestion < 10) {
+    const { currentQuestion, quizType } = get()
+    const maxQ = quizType === 'fan' ? 10 : 6
+    if (currentQuestion < maxQ) {
       set({ currentQuestion: currentQuestion + 1 })
     } else {
       get().startReveal()
@@ -55,35 +65,42 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   startReveal: () => set({ phase: 'reveal' }),
 
   finishQuiz: () => {
-    const { answers } = get()
-    const scores = calculateScores(answers)
+    const { answers, quizType } = get()
 
-    // 找出最高分和次高分维度
-    const entries = Object.entries(scores) as [keyof ScoreResult, number][]
-    entries.sort((a, b) => b[1] - a[1])
+    if (quizType === 'fan') {
+      const scores = calculateScores(answers)
+      const entries = Object.entries(scores) as [keyof ScoreResult, number][]
+      entries.sort((a, b) => b[1] - a[1])
+      const topDim = entries[0][0]
+      const secondDim = entries[1][0]
+      const topType = fanTypes.find((t) => t.dimension === topDim) || fanTypes[0]
+      const secondType = fanTypes.find((t) => t.dimension === secondDim) || fanTypes[1]
 
-    const topDim = entries[0][0]
-    const secondDim = entries[1][0]
-
-    // 根据维度找到对应球迷类型
-    const topType = fanTypes.find((t) => t.dimension === topDim) || fanTypes[0]
-    const secondType = fanTypes.find((t) => t.dimension === secondDim) || fanTypes[1]
-
-    set({
-      phase: 'result',
-      scores,
-      primaryFanType: topType,
-      secondaryFanType: secondType,
-    })
+      set({
+        phase: 'result',
+        scores,
+        primaryFanType: topType,
+        secondaryFanType: secondType,
+      })
+    } else {
+      // team matcher
+      const team = matchTeam(answers)
+      set({
+        phase: 'result',
+        matchedTeam: team,
+      })
+    }
   },
 
   reset: () =>
     set({
-      phase: 'cover',
+      quizType: 'fan',
+      phase: 'home',
       currentQuestion: 1,
       answers: {},
       scores: null,
       primaryFanType: null,
       secondaryFanType: null,
+      matchedTeam: null,
     }),
 }))
