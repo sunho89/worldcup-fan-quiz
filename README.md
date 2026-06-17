@@ -128,4 +128,33 @@ vercel
 
 ---
 
+## 🔐 知乎同步功能
+
+「同步到知乎想法」功能默认是演示模式（模拟成功提示）。
+
+如需启用真实发布，需要配置知乎开放平台的 App Key 和 App Secret：
+
+### 配置方法
+
+1. 打开 `src/utils/zhihuApi.ts`
+2. 找到以下两行：
+
+```typescript
+const APP_KEY = ''    // 填入你的 App Key
+const APP_SECRET = '' // 填入你的 App Secret
+```
+
+3. 填入你的知乎开放平台应用凭证
+4. 重新 `npm run build` 部署即可
+
+### 如何获取凭证
+
+1. 前往 [知乎开放平台](https://openapi.zhihu.com)
+2. 创建应用，获取 App Key 和 App Secret
+3. 确保应用已开通「发布想法」权限
+
+> ⚠️ 注意：凭证会暴露在前端 JS 中，适合个人使用或内部活动。如需更安全方案，建议搭建后端代理。
+
+---
+
 MIT

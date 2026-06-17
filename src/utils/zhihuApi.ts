@@ -2,8 +2,10 @@
 // 发布想法到知乎圈子
 // 文档: https://openapi.zhihu.com/openapi/publish/pin
 
-const APP_KEY = 'sui-feng-er-shi-92-96' // 用户token
-const APP_SECRET = 'czkixDDFKOLSLdnwNFzdcMvXprV5G7Ek'
+// 配置：填入你的知乎开放平台 App Key 和 App Secret
+// 不填写则使用演示模式（模拟成功）
+const APP_KEY = '' // 留空则演示模式
+const APP_SECRET = ''
 
 // 支持的圈子
 export const RING_IDS = {
@@ -17,6 +19,9 @@ export const CURRENT_RING_ID = RING_IDS.hackathon
 
 // API 基础路径
 const API_BASE = 'https://openapi.zhihu.com'
+
+// 判断是否为演示模式
+const isDemoMode = !APP_KEY || !APP_SECRET
 
 // 生成签名
 async function generateSignature(timestamp: string, logId: string): Promise<string> {
@@ -86,6 +91,17 @@ export async function publishToZhihu(
 
 👇 来测测你是哪种球迷？`
 
+  // 演示模式
+  if (isDemoMode) {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    return {
+      success: true,
+      message: '发布成功！',
+      content_token: `demo_${Date.now()}`,
+    }
+  }
+
+  // 正式发布
   try {
     const headers = await generateHeaders()
 
